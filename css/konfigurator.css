@@ -217,3 +217,6 @@ body { margin: 0; background: var(--z9-bg); color: var(--z9-text); font-family: 
   .z9__thumb img { aspect-ratio: 16 / 7; }
   .z9__block { scroll-margin-top: calc(34vh + 140px); }
 }
+
+/* много текстовых вариантов – переносятся на новые строки, а не сжимаются в одну */
+.z9__segs { grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)); }

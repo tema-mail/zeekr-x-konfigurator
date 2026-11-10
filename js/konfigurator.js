@@ -20,7 +20,9 @@
   var versionById = function (id) { for (var i = 0; i < D.versions.length; i++) if (D.versions[i].id === id) return D.versions[i]; return null; };
   var versionsOf = function (g) { return D.versions.filter(function (v) { return v.group === g; }); };
   var PREFIX = (D.versions[0].level[0].opts[0].id.match(/^Z0\d\dPC/) || ["Z011PC"])[0];
-  var SHORT = function (pc) { return pc.replace(PREFIX, ""); };
+  // в адресе коды сокращаются (Z011PC012 → 012); коды другого вида (у 001: Z001C001) идут целиком
+  var SHORT = function (pc) { return pc.indexOf(PREFIX) === 0 ? pc.slice(PREFIX.length) : pc; };
+  var LONG = function (s) { return /^Z\d/.test(s) ? s : PREFIX + s; };
 
   // все группы опций версии: уровень (батарея, H7/H9) + секции
   function groupsOf(V) { return V.level.concat(V.secs); }
@@ -53,7 +55,7 @@
     var V = versionById(q.v); if (!V) return;
     state.version = V.id; defaults(V, false);
     groupsOf(V).forEach(function (g) { if (g.role === "extra" && !g.opts[0].def) state.sel[g.sku] = null; });
-    if (q.o) q.o.split(".").forEach(function (s) { var pc = PREFIX + s, o = O[pc]; if (o && o.sku in state.sel) state.sel[o.sku] = pc; });
+    if (q.o) q.o.split(".").forEach(function (s) { var pc = LONG(s), o = O[pc]; if (o && o.sku in state.sel) state.sel[o.sku] = pc; });
   })();
   var version = function () { return versionById(state.version); };
 
