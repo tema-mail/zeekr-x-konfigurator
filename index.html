@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Конфигуратор Zeekr X</title>
+<script>(function(){var t;try{t=localStorage.getItem('tema')}catch(e){}if(!t){var h=new Date().getHours();t=(h>=19||h<7||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light'}document.documentElement.setAttribute('data-theme',t)})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/konfigurator.css">
+</head>
+<body>
+
+<!-- Конфигуратор Zeekr X. Встраивается в любую страницу: этот блок + css/konfigurator.css + js/zeekr-data.js + js/konfigurator.js + папка img/. -->
+<div class="z9" data-z9>
+  <div class="z9__stage-wrap">
+    <div class="z9__stage" tabindex="0" role="img" aria-label="Zeekr 9X в выбранной комплектации">
+      <div class="z9__shot z9__shot--a"><img alt="Zeekr 9X" width="1600" height="1000" draggable="false"></div>
+      <div class="z9__shot z9__shot--b"><img alt="" width="1600" height="1000" draggable="false"></div>
+      <div class="z9__caption">
+        <div class="z9__name" data-slot="stage-name">Zeekr 9X</div>
+        <div class="z9__note" data-slot="stage-note"></div>
+      </div>
+      <div class="z9__arrows">
+        <button type="button" class="z9__arrow" data-nav="prev" aria-label="Предыдущий вид">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="z9__arrow z9__arrow--next" data-nav="next" aria-label="Следующий вид">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="z9__loader" aria-hidden="true"></div>
+    </div>
+    <div class="z9__thumbs" data-slot="thumbs" aria-label="Вид"></div>
+  </div>
+
+  <div class="z9__panel">
+    <div class="z9__panel-groups" data-slot="groups"></div>
+
+    <div class="z9__block z9__summary">
+      <div class="z9__summary-title">Ваша сборка</div>
+      <div class="z9__summary-config" data-slot="summary-config"></div>
+      <dl class="z9__rows" data-slot="summary-lines"></dl>
+
+      <button type="button" class="z9__btn" data-send>Отправить сборку менеджеру</button>
+      <!-- data-endpoint: адрес приёма заявок сайта (POST JSON: name, phone, text, url, lines, source, page).
+           Пусто – заявка уходит событием "zeekr:lead" на блоке [data-z9]. -->
+      <form class="z9__form" data-endpoint="" novalidate hidden>
+        <p class="z9__form-title">Менеджер получит вашу сборку и перезвонит</p>
+        <input class="z9__input" type="text" name="name" placeholder="Ваше имя" autocomplete="name">
+        <div class="z9__phone">
+          <select class="z9__input z9__code" name="code" aria-label="Код страны">
+            <option value="+375">+375</option>
+            <option value="+7">+7</option>
+          </select>
+          <input class="z9__input" type="tel" name="phone" placeholder="Номер телефона" autocomplete="tel-national" required>
+        </div>
+        <label class="z9__consent"><input type="checkbox" name="agree"> <span>Согласен на обработку имени и телефона, чтобы со мной связались по этой сборке. <a href="#" data-policy target="_blank" rel="noopener">Политика конфиденциальности</a></span></label>
+        <button class="z9__btn" type="submit" disabled>Отправить сборку</button>
+        <p class="z9__form-status" role="status" aria-live="polite"></p>
+      </form>
+      <p class="z9__sent" data-slot="sent" hidden>Сборка у менеджера. Он свяжется с вами по указанному номеру.</p>
+
+      <a href="#" class="z9__link" data-copy><span aria-hidden="true">#</span> Скопировать ссылку на эту сборку</a>
+      <p class="z9__status" data-slot="copy-status" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<button type="button" class="z9-theme" data-theme-toggle aria-label="Сменить тему"></button>
+
+<script src="js/zeekr-data.js"></script>
+<script src="js/konfigurator.js"></script>
+</body>
+</html>
