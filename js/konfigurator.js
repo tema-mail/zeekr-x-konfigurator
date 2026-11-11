@@ -125,6 +125,8 @@
     var have = ["hero"].concat(angShots());
     return D.shots.filter(function (s) { return isInt(s.id) ? !!intCode() : have.indexOf(s.id) !== -1; });
   }
+  // кадр без фона показывается целиком (не обрезается под сцену): студийный hero и виды с fit: "contain"
+  function fitContain(id) { for (var i = 0; i < D.shots.length; i++) if (D.shots[i].id === id) return D.shots[i].fit ? D.shots[i].fit === "contain" : id === "hero"; return id === "hero"; }
   function fixShot() { if (!shotsNow().some(function (s) { return s.id === state.shot; })) state.shot = "hero"; }
   function srcFor(shot) {
     if (isInt(shot)) return D.paths.int.replace("{code}", intCode()).replace("{shot}", shot);
@@ -141,7 +143,7 @@
 
   var stage = $(".z9__stage"), front = $(".z9__shot--a"), back = $(".z9__shot--b"), token = 0;
   function show() {
-    var my = ++token, src = srcFor(state.shot), hero = state.shot === "hero";
+    var my = ++token, src = srcFor(state.shot), hero = fitContain(state.shot);
     stage.classList.add("is-loading");
     preload(src).then(function () {
       if (my !== token) return;
@@ -207,7 +209,7 @@
   function render() {
     var V = version(), html = "";
     if (D.groups.length > 1) {
-      html += '<div class="z9__block"><div class="z9__head"><h2 class="z9__title">Мест в салоне</h2></div><div class="z9__segs">' +
+      html += '<div class="z9__block"><div class="z9__head"><h2 class="z9__title">' + esc(D.groupsTitle || "Мест в салоне") + '</h2></div><div class="z9__segs">' +
         D.groups.map(function (g) { var on = g.id === V.group; return '<button type="button" class="z9__seg' + (on ? " is-active" : "") + '" data-group="' + g.id + '" aria-pressed="' + on + '"><b>' + esc(g.label) + "</b><span>" + esc(g.sub) + "</span></button>"; }).join("") + "</div></div>";
     }
     html += '<div class="z9__block"><div class="z9__head"><h2 class="z9__title">Версия</h2></div><div class="z9__trims">' +
@@ -229,7 +231,7 @@
   function renderThumbs() {
     $("[data-slot=thumbs]").innerHTML = shotsNow().map(function (s) {
       var on = s.id === state.shot;
-      return '<button type="button" class="z9__thumb' + (s.id === "hero" ? " is-hero" : "") + (on ? " is-active" : "") + '" data-shot="' + s.id + '" aria-pressed="' + on + '"><img src="' + srcFor(s.id) + '" alt="" loading="lazy" width="160" height="100"><span>' + esc(s.label) + "</span></button>";
+      return '<button type="button" class="z9__thumb' + (fitContain(s.id) ? " is-hero" : "") + (on ? " is-active" : "") + '" data-shot="' + s.id + '" aria-pressed="' + on + '"><img src="' + srcFor(s.id) + '" alt="" loading="lazy" width="160" height="100"><span>' + esc(s.label) + "</span></button>";
     }).join("");
   }
 
@@ -259,7 +261,7 @@
     $("[data-slot=stage-name]").textContent = D.car + " " + V.name;
     $("[data-slot=stage-note]").textContent = [opt(selRole("paint")).name, opt(selRole("wheel")).name, selRole("int") ? "салон " + opt(selRole("int")).name : ""].filter(Boolean).join(" · ");
     if (history.replaceState) history.replaceState(null, "", c.hash);
-    var detail = { text: c.text, lines: c.lines, config: c.codes, url: location.href.split("#")[0] + c.hash };
+    var detail = { version: V.id, text: c.text, lines: c.lines, config: c.codes, url: location.href.split("#")[0] + c.hash };
     window.ZeekrCfg = { get: function () { return detail; } };
     root.dispatchEvent(new CustomEvent("zeekr:change", { bubbles: true, detail: detail }));
   }
@@ -296,7 +298,14 @@
   });
   root.addEventListener("change", function (e) {
     var sku = e.target.getAttribute("data-extra");
-    if (sku) { state.sel[sku] = e.target.checked ? e.target.value : null; update(null, false); if (isInt(state.shot)) show(); }
+    if (sku) {
+      var before = srcFor(state.shot);
+      state.sel[sku] = e.target.checked ? e.target.value : null;
+      // галочка, от которой зависит кадр кузова (зеркала, обвес, спойлер): показываем кузов и обновляем картинку
+      if ((version().vehicleSkus || []).indexOf(sku) !== -1 && isInt(state.shot)) state.shot = "hero";
+      update(null, false);
+      if (srcFor(state.shot) !== before) show();
+    }
     if (e.target.name === "agree") $("form.z9__form button[type=submit]").disabled = !e.target.checked;
   });
   stage.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); step(e.key === "ArrowRight" ? 1 : -1); } });
@@ -341,6 +350,6 @@
 
   normalize(null); fixShot(); render();
   var img0 = front.querySelector("img"); img0.src = srcFor(state.shot); img0.alt = altText();
-  front.classList.add("is-front"); front.classList.toggle("is-hero", state.shot === "hero");
+  front.classList.add("is-front"); front.classList.toggle("is-hero", fitContain(state.shot));
   window.addEventListener("load", function () { setTimeout(warm, 600); });
 })();
