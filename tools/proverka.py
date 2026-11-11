@@ -22,17 +22,20 @@ with sync_playwright() as p:
                 pg.click(f'[data-extra="{cb}"]'); pg.wait_for_timeout(60); clicks += 1
             cur = pg.evaluate('document.querySelector(".z9__shot.is-front img").currentSrc')
             if not cur or cur.endswith('null') or 'undefined' in cur: fails.append(f'версия {v}: нет картинки {cur}')
+        # все ли кадры с диска достижимы: число картинок в данных против числа видов, которые показывает страница по умолчанию
+        pg.goto(U.split('#')[0], wait_until='networkidle')
+        print('видов по умолчанию:', pg.eval_on_selector_all('[data-shot]', 'e=>e.map(x=>x.dataset.shot).join(",")'))
         t = pg.evaluate('window.ZeekrCfg.get()')
         print('кликов', clicks, '| сборка:', t['text'][:150])
         pg.screenshot(path=f'{OUT}/proverka-d.png')
         pg2 = b.new_page(); pg2.goto(t['url'], wait_until='networkidle')
         print('ссылка восстанавливает:', pg2.evaluate('window.ZeekrCfg.get().text') == t['text']); pg2.close()
-        n = pg.evaluate('''async()=>{const D=window.ZEEKR_CFG;let bad=[],list=[];for(const c in D.have)for(const s of D.have[c])list.push(D.paths.ext.replace('{code}',c).replace('{shot}',s));for(const c in (D.ang||{}))for(const s of D.ang[c])list.push(D.paths.ext.replace('{code}',c).replace('{shot}',s));for(const c of D.int)list.push(D.paths.int.replace('{code}',c));for(const k in D.options)if(D.options[k].icon)list.push(D.options[k].icon);list=[...new Set(list)];for(const u of list){const r=await fetch(u,{method:'HEAD'});if(!r.ok)bad.push(u)}return [list.length,bad.slice(0,3)]}''')
+        n = pg.evaluate('''async()=>{const D=window.ZEEKR_CFG;let bad=[],list=[];for(const c in D.have)for(const s of D.have[c])list.push(D.paths.ext.replace('{code}',c).replace('{shot}',s));for(const c in (D.ang||{}))for(const s of D.ang[c])list.push(D.paths.ext.replace('{code}',c).replace('{shot}',s));for(const c of D.int)for(const sh of D.shots.filter(x=>x.id==='int'||x.kind==='int'))list.push(D.paths.int.replace('{code}',c).replace('{shot}',sh.id));for(const k in D.options)if(D.options[k].icon)list.push(D.options[k].icon);list=[...new Set(list)];for(const u of list){const r=await fetch(u,{method:'HEAD'});if(!r.ok)bad.push(u)}return [list.length,bad.slice(0,3)]}''')
         print('картинок', n[0], 'битых', n[1])
         pg.click('[data-send]'); dis = pg.eval_on_selector('form.z9__form button[type=submit]', 'e=>e.disabled')
         print('кнопка заявки неактивна без галочки:', dis)
-        m = b.new_page(viewport={'width': 390, 'height': 844}); m.goto(U, wait_until='networkidle')
-        print('ширина на 390:', m.evaluate('document.documentElement.scrollWidth')); m.screenshot(path=f'{OUT}/proverka-m.png'); m.close()
+        pg.close(); m = b.new_page(viewport={'width': 390, 'height': 844}); m.goto(U, wait_until='load'); m.wait_for_timeout(1500)
+        print('ширина на 390:', m.evaluate('document.documentElement.scrollWidth'), '| видов:', m.eval_on_selector_all('[data-shot]', 'e=>e.map(x=>x.dataset.shot).join(",")')); m.screenshot(path=f'{OUT}/proverka-m.png'); m.close()
     finally:
         b.close()
 print('ошибки консоли', errs[:4], '| 4xx', bad[:4], '| сбои', fails[:4])

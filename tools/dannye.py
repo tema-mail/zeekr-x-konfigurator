@@ -176,7 +176,13 @@ have = {c: s for c, s in have.items() if 'hero' in s}
 angmap = {c: [s for s in ['front34', 'side', 'rear34'] if os.path.exists(f'{IMG}/ext/{c}--{s}.webp')] for c in m.get('ang', [])}
 angmap = {c: s for c, s in angmap.items() if s}
 ints = [c for c in m['int'] if os.path.exists(f'{IMG}/int/{c}.webp')]
-data = {'car': CAR, 'short': SHORT, 'groups': groups, 'versions': vers, 'options': options, 'have': have, 'ang': angmap, 'int': ints,
+# проверка: каждый кадр кузова на диске должен быть достижим со страницы (иначе виды молча пропадают)
+_ref = {f'{c}--{x}.webp' for c, sh in have.items() for x in sh} | {f'{c}--{x}.webp' for c, sh in angmap.items() for x in sh}
+_files = set(os.listdir(f'{IMG}/ext')) if os.path.isdir(f'{IMG}/ext') else set()
+_lost = _files - _ref
+if len(_lost) > max(5, len(_files) // 20): raise SystemExit(f'кадры есть на диске, но не попали в данные: {len(_lost)} из {len(_files)}, например {sorted(_lost)[:3]}')
+if not angmap and any(len(v) > 1 for v in have.values()): angmap = None    # старый model.json без ракурсов: виды берутся из have
+data = {'car': CAR, 'short': SHORT, 'groups': groups, 'versions': vers, 'options': options, 'have': have, **({'ang': angmap} if angmap is not None else {}), 'int': ints,
         'paths': {'ext': IMG + '/ext/{code}--{shot}.webp', 'int': IMG + '/int/{code}.webp'},
         'shots': [{'id': 'hero', 'label': 'Студия'}, {'id': 'front34', 'label': 'Спереди ¾'}, {'id': 'side', 'label': 'Сбоку'}, {'id': 'rear34', 'label': 'Сзади ¾'}, {'id': 'int', 'label': 'Салон'}]}
 _js = json.dumps(data, ensure_ascii=False)

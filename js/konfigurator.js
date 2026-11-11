@@ -19,7 +19,7 @@
   var conflict = function (a, b) { return opt(a).mutex.indexOf(b) !== -1 || opt(b).mutex.indexOf(a) !== -1; };
   var versionById = function (id) { for (var i = 0; i < D.versions.length; i++) if (D.versions[i].id === id) return D.versions[i]; return null; };
   var versionsOf = function (g) { return D.versions.filter(function (v) { return v.group === g; }); };
-  var PREFIX = (D.versions[0].level[0].opts[0].id.match(/^Z0\d\dPC/) || ["Z011PC"])[0];
+  var PREFIX = ((((D.versions[0].level[0] || {}).opts || [{}])[0].id || "").match(/^Z0\d\dPC/) || [""])[0];
   // в адресе коды сокращаются (Z011PC012 → 012); коды другого вида (у 001: Z001C001) идут целиком
   var SHORT = function (pc) { return pc.indexOf(PREFIX) === 0 ? pc.slice(PREFIX.length) : pc; };
   var LONG = function (s) { return /^Z\d/.test(s) ? s : PREFIX + s; };
@@ -37,7 +37,7 @@
     groupsOf(V).forEach(function (g) {
       if (g.role === "extra") {
         var o = g.opts[0];
-        state.sel[g.sku] = (o.def || (keep && oldSig[sig(o.id)])) ? o.id : null;
+        state.sel[g.sku] = (o.def || o.pre || (keep && oldSig[sig(o.id)])) ? o.id : null;
         return;
       }
       // при смене версии сохраняем выбор по названию (у версий бывают разные коды одной опции)
@@ -54,7 +54,7 @@
     var q = {}; h.split("&").forEach(function (kv) { var p = kv.split("="); q[p[0]] = decodeURIComponent(p[1] || ""); });
     var V = versionById(q.v); if (!V) return;
     state.version = V.id; defaults(V, false);
-    groupsOf(V).forEach(function (g) { if (g.role === "extra" && !g.opts[0].def) state.sel[g.sku] = null; });
+    groupsOf(V).forEach(function (g) { if (g.role === "extra" && !g.opts[0].def) state.sel[g.sku] = null; });  // из ссылки: только то, что в ней есть
     if (q.o) q.o.split(".").forEach(function (s) { var pc = LONG(s), o = O[pc]; if (o && o.sku in state.sel) state.sel[o.sku] = pc; });
   })();
   var version = function () { return versionById(state.version); };
@@ -91,38 +91,43 @@
   function codeFor(skus, drop) {
     return skus.map(function (s) { return drop && drop.indexOf(s) !== -1 ? null : state.sel[s]; }).filter(Boolean).join("_");
   }
+  // codePrefix – метка версии в имени кадра, когда у версий одной модели коды опций совпадают, а машины разные
+  function pre(V) { return V.codePrefix || ""; }
   function extCode() {
-    var V = version(), c = codeFor(V.vehicleSkus);
+    var V = version(), c = pre(V) + codeFor(V.vehicleSkus);
     if (D.have[c]) return c;
     var tail = "_" + codeFor(V.vehicleSkus.slice(1));
-    for (var k in D.have) if (k.slice(-tail.length) === tail) return k;
+    for (var k in D.have) if (k.slice(-tail.length) === tail && k.indexOf(pre(V)) === 0) return k;
     return Object.keys(D.have)[0];
   }
   function intCode() {
-    var V = version(), c = codeFor(V.interiorSkus);
+    var V = version(), c = pre(V) + codeFor(V.interiorSkus);
     if (INT[c]) return c;
     var extras = V.interiorSkus.filter(function (s) { var g = groupsOf(V).filter(function (x) { return x.sku === s; })[0]; return g && g.role === "extra"; });
-    c = codeFor(V.interiorSkus, extras);
+    c = pre(V) + codeFor(V.interiorSkus, extras);
     return INT[c] ? c : null;
   }
+  var HAS_ANG = !!D.ang && Object.keys(D.ang).length > 0;   // пустая карта ракурсов = её нет, берём виды из D.have
   // ракурсы у Zeekr строятся по своему списку групп (angleSkus), он бывает короче, чем у главного кадра
   function angCode() {
     var V = version();
-    if (!D.ang || !V.angleSkus) return extCode();
-    var c = codeFor(V.angleSkus);
+    if (!HAS_ANG || !V.angleSkus) return extCode();
+    var c = pre(V) + codeFor(V.angleSkus);
     return D.ang[c] ? c : null;
   }
   function angShots() {
-    if (D.ang && version().angleSkus) { var a = angCode(); return a ? D.ang[a] : []; }
+    if (HAS_ANG && version().angleSkus) { var a = angCode(); return a ? D.ang[a] : []; }
     return (D.have[extCode()] || []).filter(function (s) { return s !== "hero"; });
   }
+  // виды салона: id "int" или kind "int" (у некоторых марок их два: панель и кресла)
+  function isInt(id) { for (var i = 0; i < D.shots.length; i++) if (D.shots[i].id === id) return id === "int" || D.shots[i].kind === "int"; return false; }
   function shotsNow() {
     var have = ["hero"].concat(angShots());
-    return D.shots.filter(function (s) { return s.id === "int" ? !!intCode() : have.indexOf(s.id) !== -1; });
+    return D.shots.filter(function (s) { return isInt(s.id) ? !!intCode() : have.indexOf(s.id) !== -1; });
   }
   function fixShot() { if (!shotsNow().some(function (s) { return s.id === state.shot; })) state.shot = "hero"; }
   function srcFor(shot) {
-    if (shot === "int") return D.paths.int.replace("{code}", intCode());
+    if (isInt(shot)) return D.paths.int.replace("{code}", intCode()).replace("{shot}", shot);
     return D.paths.ext.replace("{code}", shot === "hero" ? extCode() : (angCode() || extCode())).replace("{shot}", shot);
   }
   var cache = {};
@@ -147,7 +152,7 @@
   }
   function selRole(role) { var g = groupByRole(version(), role); return g ? state.sel[g.sku] : null; }
   function altText() {
-    if (state.shot === "int") return "Салон " + D.car + ", " + opt(selRole("int")).name;
+    if (isInt(state.shot)) return "Салон " + D.car + ", " + opt(selRole("int")).name;
     return D.car + " " + version().name + ", " + opt(selRole("paint")).name + ", диски " + opt(selRole("wheel")).name;
   }
 
@@ -279,8 +284,8 @@
       var g = groupsOf(version()).filter(function (x) { return x.sku === d.sku; })[0], role = g ? g.role : "";
       state.sel[d.sku] = d.pc;
       if (role === "wheel") state.shot = "side";
-      else if (role === "paint" || role === "adas") { if (state.shot === "int") state.shot = "hero"; }
-      else if (role === "int" || role === "screen" || (g && g.img === "int")) state.shot = "int";
+      else if (role === "paint" || role === "adas") { if (isInt(state.shot)) state.shot = "hero"; }
+      else if (role === "int" || role === "screen" || (g && g.img === "int")) { if (!isInt(state.shot)) state.shot = "int"; }
       else if (g && g.img === "ext") state.shot = "hero";                // декор, крыша, зеркала, спойлер – всегда первый кадр
       update(d.sku, role !== "battery");
     } else if (d.shot) { state.shot = d.shot; renderThumbs(); show();
@@ -291,7 +296,7 @@
   });
   root.addEventListener("change", function (e) {
     var sku = e.target.getAttribute("data-extra");
-    if (sku) { state.sel[sku] = e.target.checked ? e.target.value : null; update(null, false); if (state.shot === "int") show(); }
+    if (sku) { state.sel[sku] = e.target.checked ? e.target.value : null; update(null, false); if (isInt(state.shot)) show(); }
     if (e.target.name === "agree") $("form.z9__form button[type=submit]").disabled = !e.target.checked;
   });
   stage.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); step(e.key === "ArrowRight" ? 1 : -1); } });

@@ -12,7 +12,7 @@ cd "$D"
 mkdir -p css js tools .github/workflows "$IMG"/{ext,int,options}
 cp $SRC/css/konfigurator.css css/; cp $SRC/js/konfigurator.js js/; cp $SRC/tools/*.py $SRC/tools/novaya-model.sh tools/
 cp $SRC/.github/workflows/pages.yml .github/workflows/; cp $SRC/robots.txt $SRC/.gitignore $SRC/.nojekyll .
-sed "s/Конфигуратор Zeekr 9X/Конфигуратор $CAR/g" $SRC/index.html > index.html
+sed "s/Zeekr 9X/$CAR/g" $SRC/index.html > index.html
 python3 tools/kadry.py raw "$IMG"
 python3 tools/dannye.py raw/model.json js/zeekr-data.js "$CAR" "$SHORT" "$IMG" "$MID"
 python3 - "$CAR" "$SLUG" "$MID" <<'EOF'
@@ -62,7 +62,7 @@ PYCJK
 git add -A
 git commit -q -m "Конфигуратор $CAR: сборка без цен, рендеры Zeekr под каждую сборку, отправка менеджеру
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>"
 if ! ~/.local/bin/gh repo view tema-mail/zeekr-$SLUG-konfigurator >/dev/null 2>&1; then
   ~/.local/bin/gh repo create tema-mail/zeekr-$SLUG-konfigurator --public --source . --push -d "Конфигуратор $CAR для встраивания на сайт" >/dev/null
   ~/.local/bin/gh api -X POST repos/tema-mail/zeekr-$SLUG-konfigurator/pages -f build_type=workflow >/dev/null

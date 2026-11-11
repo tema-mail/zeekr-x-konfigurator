@@ -220,3 +220,8 @@ body { margin: 0; background: var(--z9-bg); color: var(--z9-text); font-family: 
 
 /* много текстовых вариантов – переносятся на новые строки, а не сжимаются в одну */
 .z9__segs { grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)); }
+
+/* больше пяти видов – миниатюры прокручиваются вбок, а не сжимаются */
+.z9__thumbs { grid-auto-columns: minmax(3.6rem, 1fr); overflow-x: auto; scrollbar-width: none; }
+.z9__thumbs::-webkit-scrollbar { display: none; }
+.z9__stage-wrap, .z9__panel { min-width: 0; }   /* полоса миниатюр прокручивается внутри, а не расширяет страницу */
